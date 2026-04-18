@@ -62,6 +62,89 @@ export default function ComicMaker() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [fps, setFps] = useState(8);
 
+  const applyLayout = (type: string) => {
+    const canvas = canvasState;
+    if (!canvas) return;
+    
+    // Deleta linhas existentes de layout
+    canvas.getObjects().filter(o => (o as any).id === 'layout-line').forEach(o => canvas.remove(o));
+
+    const lineProps = {
+      stroke: '#1a1a2e',
+      strokeWidth: 4,
+      selectable: false,
+      evented: false,
+      id: 'layout-line'
+    };
+
+    if (type === 'v2') {
+      canvas.add(new fabric.Line([300, 0, 300, 450], lineProps));
+    } else if (type === 'h2') {
+      canvas.add(new fabric.Line([0, 225, 600, 225], lineProps));
+    } else if (type === 'g4') {
+      canvas.add(new fabric.Line([300, 0, 300, 450], lineProps));
+      canvas.add(new fabric.Line([0, 225, 600, 225], lineProps));
+    } else if (type === 'v3') {
+       canvas.add(new fabric.Line([200, 0, 200, 450], lineProps));
+       canvas.add(new fabric.Line([400, 0, 400, 450], lineProps));
+    }
+    
+    canvas.renderAll();
+    pushUndoState(canvas);
+    showToast('📐 Layout aplicado');
+  };
+
+  const saveCurrentFrame = () => {
+    const canvas = canvasState;
+    if (!canvas) return;
+    const data = canvas.toJSON(['id', 'locked']);
+    
+    // Thumbnail para o preview
+    const thumb = canvas.toDataURL({ format: 'png', quality: 0.1 });
+    
+    setFrames(prev => {
+      const newFrames = [...prev];
+      if (newFrames.length === 0) {
+        return [{ data, thumb }];
+      }
+      newFrames[currentFrame] = { data, thumb };
+      return newFrames;
+    });
+  };
+
+  const addNewFrame = () => {
+    const canvas = canvasState;
+    if (!canvas) return;
+    
+    saveCurrentFrame();
+    
+    const newIdx = frames.length === 0 ? 1 : frames.length;
+    
+    canvas.clear();
+    (canvas as any).backgroundColor = '#ffffff';
+    canvas.renderAll();
+    
+    setFrames(prev => [...prev, { data: canvas.toJSON(['id','locked']), thumb: '' }]);
+    setCurrentFrame(newIdx);
+    setFlipbookMode(true);
+    showToast('✨ Nova página adicionada');
+  };
+
+  const goToFrame = (index: number) => {
+    const canvas = canvasState;
+    if (!canvas) return;
+    
+    saveCurrentFrame();
+    
+    const target = frames[index];
+    if (target && target.data) {
+      canvas.loadFromJSON(target.data, () => {
+        canvas.renderAll();
+        setCurrentFrame(index);
+      });
+    }
+  };
+
   const showToast = (msg: string) => {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(''), 2500);
@@ -102,6 +185,12 @@ export default function ComicMaker() {
       initCanvas.add(t, t2, t3);
       initCanvas.renderAll();
       pushUndoState(initCanvas);
+      
+      // Inicializa o primeiro frame
+      const data = initCanvas.toJSON(['id', 'locked']);
+      const thumb = initCanvas.toDataURL({ format: 'png', quality: 0.1 });
+      setFrames([{ data, thumb }]);
+      
       showToast('🎉 Bem-vindo ao Comic Maker!');
     }, 400);
 
@@ -386,9 +475,23 @@ export default function ComicMaker() {
         {/* Canvas Area */}
         <div className="flex-1 bg-stone-200 overflow-hidden flex flex-col items-center justify-center p-2 sm:p-4 md:p-8 relative" ref={wrapperRef}>
           {flipbookMode && (
-             <div className="w-full max-w-2xl bg-white p-3 rounded-xl border-4 border-slate-900 shadow-[4px_4px_0_#1a1a2e] mb-4 flex gap-3 overflow-x-auto items-center shrink-0">
-                <div className="font-bangers text-xl">🎬 FLIPBOOK</div>
-                <button className="btn-comic bg-emerald-500 text-white px-3 py-1 rounded whitespace-nowrap" onClick={() => {/* Add frame impl */}}>+ Quadro</button>
+             <div className="w-full max-w-2xl bg-white p-3 rounded-xl border-4 border-slate-900 shadow-[4px_4px_0_#1a1a2e] mb-4 flex gap-3 overflow-x-auto items-center shrink-0 custom-scrollbar">
+                <div className="font-bangers text-xl shrink-0">🎬 PÁGINAS</div>
+                <div className="flex gap-2 min-w-max">
+                  {frames.map((f, i) => (
+                    <button key={i} onClick={() => goToFrame(i)} className={cn(
+                      "w-16 h-12 border-2 rounded overflow-hidden transition-all bg-slate-100 flex-shrink-0 relative",
+                      currentFrame === i ? "border-red-500 ring-2 ring-red-200 scale-105" : "border-slate-400 opacity-70"
+                    )}>
+                      {f.thumb ? <img src={f.thumb} alt={`page ${i}`} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-[10px] font-bold">{i+1}</div>}
+                      <div className="absolute top-0 right-0 bg-slate-800 text-white text-[8px] px-1">{i+1}</div>
+                    </button>
+                  ))}
+                  <button className="w-12 h-12 border-2 border-dashed border-slate-400 rounded flex items-center justify-center text-slate-400 hover:border-red-500 hover:text-red-500 flex-shrink-0" onClick={addNewFrame}>+</button>
+                </div>
+                
+                <div className="w-px h-8 bg-slate-200 shrink-0 mx-2" />
+                
                 <button className="btn-comic bg-orange-400 px-3 py-1 rounded flex items-center gap-1 whitespace-nowrap"><Play size={14}/> Play</button>
                 <div className="flex items-center gap-2 font-comic text-sm shrink-0">
                   <span>FPS: {fps}</span>
@@ -431,6 +534,7 @@ export default function ComicMaker() {
               { id: 'stickers', label: '🎨 Sprites' },
               { id: 'text', label: '💬 Texto' },
               { id: 'bg', label: '🌆 Fundo' },
+              { id: 'layout', label: '📐 Layout' },
             ].map(tab => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)} 
                 className={cn("flex-1 py-3 text-sm font-bangers tracking-wider transition-colors", activeTab === tab.id ? "bg-red-500 text-white" : "opacity-70 hover:opacity-100")}>
@@ -541,6 +645,31 @@ export default function ComicMaker() {
                 <div className="mt-4">
                   <label className="text-xs text-slate-500 font-comic mb-1 block">Cor personalizada</label>
                   <input type="color" onChange={e => setBgColor(e.target.value)} className="w-full h-12 border-2 border-slate-900 rounded-lg cursor-pointer" />
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'layout' && (
+              <div className="space-y-6">
+                <h3 className="font-bangers text-xl text-slate-900 border-b-2 border-slate-100 pb-2">Layout dos Quadros</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    { id: 'empty', label: 'Único', icon: <div className="w-full h-full border-2 border-slate-900 rounded" /> },
+                    { id: 'v2', label: '2 Verticais', icon: <div className="w-full h-full border-2 border-slate-900 rounded flex"><div className="w-1/2 border-r-2 border-slate-900" /><div className="w-1/2" /></div> },
+                    { id: 'h2', label: '2 Horizontais', icon: <div className="w-full h-full border-2 border-slate-900 rounded flex flex-col"><div className="h-1/2 border-b-2 border-slate-900" /><div className="h-1/2" /></div> },
+                    { id: 'g4', label: 'Grade 4', icon: <div className="w-full h-full border-2 border-slate-900 rounded grid grid-cols-2 grid-rows-2"><div className="border-r-2 border-b-2 border-slate-900" /><div className="border-b-2 border-slate-900" /><div className="border-r-2 border-slate-900" /><div /></div> },
+                    { id: 'v3', label: '3 Verticais', icon: <div className="w-full h-full border-2 border-slate-900 rounded flex"><div className="w-1/3 border-r-2 border-slate-900" /><div className="w-1/3 border-r-2 border-slate-900" /><div className="w-1/3" /></div> },
+                  ].map(l => (
+                    <button key={l.id} onClick={() => applyLayout(l.id)} className="group flex flex-col items-center gap-2">
+                       <div className="w-full aspect-video bg-white p-2 border-4 border-slate-900 shadow-[4px_4px_0_#1a1a2e] group-hover:-translate-y-1 transition-transform">
+                          {l.icon}
+                       </div>
+                       <span className="font-comic text-xs font-bold uppercase">{l.label}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="bg-yellow-100 p-3 rounded-lg border-2 border-yellow-400 text-[10px] font-comic leading-tight">
+                  💡 <b>Dica:</b> O layout adiciona linhas guia permanentes que dividem sua história em quadros.
                 </div>
               </div>
             )}
