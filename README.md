@@ -1,20 +1,46 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# 🎨 Criador de HQ Maker (LPT)
 
-# Run and deploy your AI Studio app
+Projeto desenvolvido para permitir que estudantes criem suas próprias histórias em quadrinhos de forma intuitiva, utilizando inteligência artificial para auxiliar no processo criativo.
 
-This contains everything you need to run your app locally.
+## 🚀 Links do Projeto
+- **Deploy (Surge):** [https://lpt-hqmaker.surge.sh](https://lpt-hqmaker.surge.sh)
+- **Repositório GitHub:** [https://github.com/sergiodeplus/lpthqmaker.git](https://github.com/sergiodeplus/lpthqmaker.git)
 
-View your app in AI Studio: https://ai.studio/apps/2259ace3-2a59-4fcd-958c-f3b0923195d8
+## 🛠️ Stack Tecnológica
+- **Framework:** Next.js 15+ (App Router)
+- **Styling:** TailwindCSS 4, Lucide React (Ícones)
+- **Canvas:** Fabric.js (Manipulação de imagens e HQ)
+- **IA:** Google Gemini API (@google/genai)
+- **Animações:** Motion (Framer Motion)
+- **Deploy:** Surge.sh
 
-## Run Locally
+## 📖 Como Rodar Localmente
 
-**Prerequisites:**  Node.js
+**Pré-requisitos:** Node.js (v20+)
 
+1. **Clonar o repositório:**
+   ```bash
+   git clone https://github.com/sergiodeplus/lpthqmaker.git
+   cd lpthqmaker
+   ```
+2. **Instalar dependências:**
+   ```bash
+   npm install
+   ```
+3. **Configurar API Key:**
+   Crie um arquivo `.env.local` e adicione sua chave:
+   ```env
+   NEXT_PUBLIC_GEMINI_API_KEY=sua_chave_aqui
+   ```
+4. **Iniciar o servidor de desenvolvimento:**
+   ```bash
+   npm run dev
+   ```
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## 📜 Histórico de Modificações (Changelog)
+- **2026-04-18:**
+  - Inicialização do repositório Git.
+  - Configuração de build estático (`output: 'export'`).
+  - Deploy realizado com sucesso no Surge.
+  - Atualização do README com informações detalhadas.
+

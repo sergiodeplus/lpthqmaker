@@ -12,7 +12,7 @@ import {
 import { cn } from '@/lib/utils';
 
 // Consts
-const ET_IMAGE = 'https://dev05.nekoweb.org/et-removebg-preview.png';
+const ET_IMAGE = '/et.png';
 const spriteData: Record<string, string[]> = {
   '👽 ET / Personagem': [ET_IMAGE],
   '😊 Personagens': ['👦','👧','👨','👩','👴','👵','🧒','🧑','🧔','👸','🤴','🦸','🦹','🧙','🧜','🧝','🧞','🧟','🧛','🧚'],
@@ -204,10 +204,9 @@ export default function ComicMaker() {
     if (!canvas) return;
     
     let finalUrl = url;
-    // Se for URL externa, usar o proxy do Next.js para burlar restrições de CORS no Canvas
-    if (url.startsWith('http')) {
-      finalUrl = `/_next/image?url=${encodeURIComponent(url)}&w=640&q=75`;
-    }
+    // Se for URL externa, usar o proxy do Next.js apenas se não for exportação estática
+    // Note: Em produção no Surge (static export), o proxy /_next/image não funciona.
+    // Como baixamos o ET para o local, usaremos a URL direta.
 
     fabric.Image.fromURL(finalUrl, img => {
       if (!img || !(img as any).set) {
@@ -219,8 +218,9 @@ export default function ComicMaker() {
       canvas.add(img);
       canvas.setActiveObject(img);
       canvas.renderAll();
+      setMobilePanel('canvas');
       showToast('🖼 Imagem adicionada');
-    }, { crossOrigin: 'anonymous' });
+    });
   };
 
   const addEmoji = (emoji: string) => {
@@ -233,6 +233,7 @@ export default function ComicMaker() {
     canvas.add(t);
     canvas.setActiveObject(t);
     canvas.renderAll();
+    setMobilePanel('canvas');
     showToast('✓ ' + emoji + ' adicionado!');
   };
 
@@ -244,6 +245,17 @@ export default function ComicMaker() {
     canvas.add(t);
     canvas.setActiveObject(t);
     canvas.renderAll();
+    
+    // Focar no texto e abrir teclado no celular
+    setMobilePanel('canvas');
+    setTimeout(() => {
+      canvas.calcOffset();
+      t.enterEditing();
+      t.selectAll();
+      canvas.renderAll();
+    }, 300);
+
+    setTextInput('');
     showToast('✓ Texto adicionado!');
   };
 
@@ -508,6 +520,7 @@ export default function ComicMaker() {
                       const t = new fabric.Text(w, { left: 150, top: 150, fontFamily: 'Bangers', fontSize: 32, fill: '#ffd60a', stroke: '#1a1a2e', strokeWidth: 2, angle: -5 + Math.random()*10 });
                       canvasState?.add(t);
                       canvasState?.setActiveObject(t);
+                      setMobilePanel('canvas');
                     }} className="btn-comic bg-red-500 text-white px-3 py-1 rounded text-sm hover:-translate-y-1 transition-transform">
                       {w}
                     </button>
