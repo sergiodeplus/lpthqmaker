@@ -9,7 +9,16 @@ const specialElite = Special_Elite({ weight: '400', subsets: ['latin'], variable
 
 export const metadata: Metadata = {
   title: 'Comic Maker ✦ HQ Studio',
-  description: 'Create your own comic books!',
+  description: 'Crie suas próprias histórias em quadrinhos!',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Comic Maker',
+  },
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 export default function RootLayout({children}: {children: React.ReactNode}) {

@@ -62,6 +62,37 @@ export default function ComicMaker() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [fps, setFps] = useState(8);
 
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').then((reg) => {
+          console.log('SW registrado!', reg);
+        });
+      });
+    }
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    });
+  }, []);
+
+  const handleInstallClick = () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choice: any) => {
+        if (choice.outcome === 'accepted') {
+          showToast('🚀 Instalando Comic Maker...');
+        }
+        setDeferredPrompt(null);
+      });
+    } else {
+      showToast('O app já está instalado ou não é compatível.');
+    }
+  };
+
   const applyLayout = (type: string) => {
     const canvas = canvasState;
     if (!canvas) return;
@@ -851,6 +882,12 @@ export default function ComicMaker() {
                      2. Você pode imprimir as imagens ou enviá-las para o seu professor.
                    </p>
                 </div>
+
+                {deferredPrompt && (
+                  <button onClick={handleInstallClick} className="w-full btn-comic bg-yellow-400 text-slate-900 py-4 rounded-xl flex items-center justify-center gap-3 text-lg border-b-4 border-slate-900 active:translate-y-1 active:border-b-0 transition-all font-bold">
+                     ✨ INSTALAR NO CELULAR
+                  </button>
+                )}
               </div>
             )}
           </div>
