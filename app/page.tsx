@@ -145,6 +145,61 @@ export default function ComicMaker() {
     }
   };
 
+  const playFlipbook = () => {
+    if (frames.length < 2) return showToast('Adicione mais páginas!');
+    
+    saveCurrentFrame(); // Garante o estado atual
+    setIsPlaying(true);
+    let idx = 0;
+    
+    const interval = setInterval(() => {
+      const f = frames[idx];
+      if (f && f.data) {
+        canvasState?.loadFromJSON(f.data, () => canvasState?.renderAll());
+      }
+      idx++;
+      if (idx >= frames.length) {
+        clearInterval(interval);
+        setIsPlaying(false);
+        showToast('Fim da história!');
+        // Volta para o frame atual
+        goToFrame(currentFrame);
+      }
+    }, 1000 / fps);
+  };
+
+  const downloadPage = () => {
+    const canvas = canvasState;
+    if (!canvas) return;
+    
+    // Desativa seleção para o print ficar limpo
+    canvas.discardActiveObject();
+    canvas.renderAll();
+    
+    const dataURL = canvas.toDataURL({ format: 'png', quality: 1.0 });
+    const link = document.createElement('a');
+    link.download = `hq-pagina-${currentFrame + 1}.png`;
+    link.href = dataURL;
+    link.click();
+    showToast('🖼 Foto da página baixada!');
+  };
+
+  const downloadProject = () => {
+    saveCurrentFrame();
+    const project = {
+      name: 'Minha HQ',
+      frames,
+      date: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(project)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = 'projeto-hq.json';
+    link.href = url;
+    link.click();
+    showToast('💾 Projeto salvo!');
+  };
+
   const showToast = (msg: string) => {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(''), 2500);
@@ -492,10 +547,16 @@ export default function ComicMaker() {
                 
                 <div className="w-px h-8 bg-slate-200 shrink-0 mx-2" />
                 
-                <button className="btn-comic bg-orange-400 px-3 py-1 rounded flex items-center gap-1 whitespace-nowrap"><Play size={14}/> Play</button>
+                <button 
+                  disabled={isPlaying}
+                  onClick={playFlipbook}
+                  className={cn("btn-comic px-3 py-1 rounded flex items-center gap-1 whitespace-nowrap", isPlaying ? "bg-slate-300" : "bg-orange-400 hover:bg-orange-500")}
+                >
+                  <Play size={14}/> {isPlaying ? 'Rodando...' : 'Play HQ'}
+                </button>
                 <div className="flex items-center gap-2 font-comic text-sm shrink-0">
-                  <span>FPS: {fps}</span>
-                  <input type="range" min="1" max="24" value={fps} onChange={e => setFps(Number(e.target.value))} className="w-16 sm:w-20" />
+                  <span>Velocidade:</span>
+                  <input type="range" min="1" max="12" value={fps} onChange={e => setFps(Number(e.target.value))} className="w-16 sm:w-20" />
                 </div>
              </div>
           )}
@@ -535,6 +596,7 @@ export default function ComicMaker() {
               { id: 'text', label: '💬 Texto' },
               { id: 'bg', label: '🌆 Fundo' },
               { id: 'layout', label: '📐 Layout' },
+              { id: 'export', label: '💾 Salvar' },
             ].map(tab => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)} 
                 className={cn("flex-1 py-3 text-sm font-bangers tracking-wider transition-colors", activeTab === tab.id ? "bg-red-500 text-white" : "opacity-70 hover:opacity-100")}>
@@ -670,6 +732,36 @@ export default function ComicMaker() {
                 </div>
                 <div className="bg-yellow-100 p-3 rounded-lg border-2 border-yellow-400 text-[10px] font-comic leading-tight">
                   💡 <b>Dica:</b> O layout adiciona linhas guia permanentes que dividem sua história em quadros.
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'export' && (
+              <div className="space-y-6">
+                <h3 className="font-bangers text-xl text-slate-900 border-b-2 border-slate-100 pb-2">Exportar sua História</h3>
+                
+                <div className="space-y-3">
+                  <button onClick={downloadPage} className="w-full btn-comic bg-emerald-500 text-white py-4 rounded-xl flex items-center justify-center gap-3 text-lg">
+                    <ImageIcon size={24} /> BAIXAR PÁGINA (PNG)
+                  </button>
+                  <p className="text-[10px] text-slate-500 font-comic text-center">Salva a página atual como uma imagem no seu dispositivo.</p>
+                </div>
+
+                <div className="h-px bg-slate-200 my-2" />
+
+                <div className="space-y-3">
+                  <button onClick={downloadProject} className="w-full btn-comic bg-slate-900 text-white py-4 rounded-xl flex items-center justify-center gap-3 text-lg">
+                    <Download size={24} /> SALVAR PROJETO (JSON)
+                  </button>
+                   <p className="text-[10px] text-slate-500 font-comic text-center">Salva o arquivo do projeto para você continuar editando depois.</p>
+                </div>
+
+                <div className="bg-blue-50 p-4 rounded-xl border-2 border-blue-200">
+                   <h4 className="font-bangers text-blue-800 text-sm mb-1">Como entregar a tarefa?</h4>
+                   <p className="text-[11px] text-blue-700 font-comic leading-relaxed">
+                     1. Baixe cada página da sua história usando o botão verde.<br/>
+                     2. Você pode imprimir as imagens ou enviá-las para o seu professor.
+                   </p>
                 </div>
               </div>
             )}
