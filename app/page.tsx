@@ -100,7 +100,7 @@ export default function ComicMaker() {
     const data = canvas.toJSON(['id', 'locked']);
     
     // Thumbnail para o preview
-    const thumb = canvas.toDataURL({ format: 'png', quality: 0.1 });
+    const thumb = canvas.toDataURL({ format: 'png', quality: 0.8 }); // Maior qualidade para strip
     
     setFrames(prev => {
       const newFrames = [...prev];
@@ -198,6 +198,81 @@ export default function ComicMaker() {
     link.href = url;
     link.click();
     showToast('💾 Projeto salvo!');
+  };
+
+  const downloadFullStrip = async () => {
+    if (frames.length === 0) return;
+    saveCurrentFrame();
+    showToast('⏳ Gerando HQ completa...');
+
+    setTimeout(async () => {
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = 600;
+      tempCanvas.height = 450 * frames.length;
+      const ctx = tempCanvas.getContext('2d');
+      if (!ctx) return;
+
+      for (let i = 0; i < frames.length; i++) {
+        const img = new Image();
+        img.src = frames[i].thumb;
+        await new Promise(r => { img.onload = r; });
+        ctx.drawImage(img, 0, i * 450);
+      }
+
+      const link = document.createElement('a');
+      link.download = 'hq-completa-tira.png';
+      link.href = tempCanvas.toDataURL('image/png');
+      link.click();
+      showToast('📜 HQ Completa pronta!');
+    }, 500);
+  };
+
+  const recordVideo = async () => {
+    if (frames.length < 2) return showToast('Adicione mais páginas!');
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    saveCurrentFrame();
+    showToast('🎬 Gravando vídeo...');
+    
+    try {
+      const stream = (canvas as any).captureStream(30);
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
+      const chunks: Blob[] = [];
+
+      mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'meu-filme-hq.webm';
+        link.click();
+        showToast('✅ Filme concluído!');
+      };
+
+      mediaRecorder.start();
+      setIsPlaying(true);
+      
+      let idx = 0;
+      const playInterval = setInterval(() => {
+        const f = frames[idx];
+        if(f) canvasState?.loadFromJSON(f.data, () => canvasState?.renderAll());
+        idx++;
+        if (idx >= frames.length) {
+          clearInterval(playInterval);
+          setTimeout(() => {
+            mediaRecorder.stop();
+            setIsPlaying(false);
+            goToFrame(currentFrame);
+          }, 1000);
+        }
+      }, 1000 / fps);
+
+    } catch (err) {
+      console.error(err);
+      showToast('❌ Erro ao gravar vídeo');
+    }
   };
 
   const showToast = (msg: string) => {
@@ -742,9 +817,22 @@ export default function ComicMaker() {
                 
                 <div className="space-y-3">
                   <button onClick={downloadPage} className="w-full btn-comic bg-emerald-500 text-white py-4 rounded-xl flex items-center justify-center gap-3 text-lg">
-                    <ImageIcon size={24} /> BAIXAR PÁGINA (PNG)
+                    <ImageIcon size={24} /> PÁGINA ATUAL (PNG)
                   </button>
-                  <p className="text-[10px] text-slate-500 font-comic text-center">Salva a página atual como uma imagem no seu dispositivo.</p>
+                </div>
+
+                <div className="space-y-3">
+                  <button onClick={downloadFullStrip} className="w-full btn-comic bg-yellow-400 text-slate-900 py-4 rounded-xl flex items-center justify-center gap-3 text-lg">
+                    <Columns size={24} /> HQ COMPLETA (TIRA)
+                  </button>
+                   <p className="text-[10px] text-slate-500 font-comic text-center">Gera uma única imagem longa com todas as suas páginas.</p>
+                </div>
+
+                <div className="space-y-3">
+                  <button onClick={recordVideo} className="w-full btn-comic bg-red-500 text-white py-4 rounded-xl flex items-center justify-center gap-3 text-lg">
+                    <Film size={24} /> BAIXAR FILME (VIDEO)
+                  </button>
+                   <p className="text-[10px] text-slate-500 font-comic text-center">Transforma sua HQ em um vídeo animado (WebM).</p>
                 </div>
 
                 <div className="h-px bg-slate-200 my-2" />
