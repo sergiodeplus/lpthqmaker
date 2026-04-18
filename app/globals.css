@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #1a1a2e;
+  --color-panel-bg: #fff9f0;
+  --color-accent: #e63946;
+  --color-accent2: #f4a261;
+  --color-accent3: #2a9d8f;
+  --color-comic-yellow: #ffd60a;
+
+  --font-bangers: var(--font-bangers), cursive;
+  --font-comic: var(--font-comic-neue), cursive;
+  --font-permanent-marker: var(--font-permanent-marker), cursive;
+  --font-special-elite: var(--font-special-elite), cursive;
+}
+
+@layer base {
+  body {
+    @apply bg-[#f0e6d3];
+    background-image: radial-gradient(circle at 1px 1px, rgba(26,26,46,0.08) 1px, transparent 0);
+    background-size: 20px 20px;
+    overscroll-behavior: none;
+    overflow-x: hidden;
+  }
+}
+
+@layer utilities {
+  .comic-border {
+    border: 3px solid var(--color-ink);
+  }
+  .panel-shadow {
+    box-shadow: 4px 4px 0 var(--color-ink);
+  }
+  .btn-comic {
+    font-family: var(--font-bangers);
+    letter-spacing: 0.05em;
+    border: 2px solid var(--color-ink);
+    box-shadow: 3px 3px 0 var(--color-ink);
+    transition: all 0.1s;
+    user-select: none;
+  }
+  .btn-comic:active {
+    box-shadow: 1px 1px 0 var(--color-ink);
+    transform: translate(2px,2px);
+  }
+  .drawing-mode {
+    cursor: crosshair;
+  }
+}
